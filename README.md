@@ -1,0 +1,1 @@
+# odoo-ldce-hackathon-GlobeTrotter
