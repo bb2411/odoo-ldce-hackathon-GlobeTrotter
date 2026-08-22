@@ -3,11 +3,16 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const prisma = require("./lib/prisma");
+const prisma = require("./lib/Prisma");
+const authRoutes = require("./routes/auth.routes");
+const { validateEnvironment } = require("./config/env");
+
+validateEnvironment();
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map((origin) => origin.trim());
+app.use(cors({ origin: allowedOrigins?.length ? allowedOrigins : true }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -38,4 +43,11 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+app.use("/api/auth", authRoutes);
+
+app.use((error, req, res, next) => {
+  console.error(error);
+  res.status(500).json({ message: "An unexpected server error occurred." });
 });
