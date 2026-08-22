@@ -5,6 +5,12 @@ const cors = require("cors");
 
 const prisma = require("./lib/Prisma");
 const authRoutes = require("./routes/auth.routes");
+const tripRoutes = require("./routes/trip.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
+const discoveryRoutes = require("./routes/discovery.routes");
+const profileRoutes = require("./routes/profile.routes");
+const shareRoutes = require("./routes/share.routes");
+const publicRoutes = require("./routes/public.routes");
 const { validateEnvironment } = require("./config/env");
 
 validateEnvironment();
@@ -41,13 +47,20 @@ app.get("/test-db", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 app.use("/api/auth", authRoutes);
+app.use("/api/trips", tripRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api", discoveryRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/trips", shareRoutes);
+app.use("/api/public", publicRoutes);
 
 app.use((error, req, res, next) => {
   console.error(error);
+  if (error.code === "P2002") return res.status(409).json({ message: "A record with these details already exists." });
   res.status(500).json({ message: "An unexpected server error occurred." });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

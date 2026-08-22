@@ -1,0 +1,30 @@
+const express = require("express");
+const controller = require("../controller/trip.controller");
+const content = require("../controller/trip-content.controller");
+const { requireAuth } = require("../middleware/auth.middleware");
+
+const router = express.Router();
+router.use(requireAuth);
+router.post("/", controller.createTrip);
+router.get("/", controller.listTrips);
+router.get("/:tripId", controller.getTrip);
+router.patch("/:tripId", controller.updateTrip);
+router.delete("/:tripId", controller.deleteTrip);
+router.post("/:tripId/stops", controller.addStop);
+router.patch("/:tripId/stops/:stopId", controller.updateStop);
+router.delete("/:tripId/stops/:stopId", controller.removeStop);
+router.put("/:tripId/stops/reorder", controller.reorderStops);
+router.post("/:tripId/stops/:stopId/activities", content.addPlannedActivity);
+router.patch("/:tripId/planned-activities/:plannedActivityId", content.updatePlannedActivity);
+router.delete("/:tripId/planned-activities/:plannedActivityId", content.removePlannedActivity);
+router.put("/:tripId/stops/:stopId/activities/reorder", content.reorderPlannedActivities);
+router.get("/:tripId/itinerary", content.getItinerary);
+router.post("/:tripId/expenses", content.addExpense);
+router.patch("/:tripId/expenses/:expenseId", content.updateExpense);
+router.delete("/:tripId/expenses/:expenseId", content.removeExpense);
+router.post("/:tripId/transports", content.addTransport);
+router.patch("/:tripId/transports/:transportId", content.updateTransport);
+router.delete("/:tripId/transports/:transportId", content.removeTransport);
+router.get("/:tripId/budget", content.getBudget);
+
+module.exports = router;

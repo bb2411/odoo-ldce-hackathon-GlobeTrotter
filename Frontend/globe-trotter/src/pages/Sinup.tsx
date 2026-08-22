@@ -230,7 +230,7 @@ export default function Signup() {
       });
 
       if (result.success) {
-        navigate("/login");
+        navigate("/app/dashboard");
       } else {
         setSubmitError(
           result.message ??

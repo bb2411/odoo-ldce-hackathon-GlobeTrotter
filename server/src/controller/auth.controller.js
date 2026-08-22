@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const prisma = require("../lib/Prisma");
 
@@ -119,4 +120,48 @@ async function getCurrentUser(req, res, next) {
   }
 }
 
-module.exports = { register, login, getCurrentUser };
+async function requestPasswordReset(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: "A valid email address is required." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() }, select: { id: true } });
+    let resetUrl;
+    if (user) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const passwordResetToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordResetToken, passwordResetExpiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+      });
+      resetUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password?token=${rawToken}`;
+      if (process.env.NODE_ENV !== "production") console.info(`Password reset link: ${resetUrl}`);
+    }
+
+    return res.json({
+      message: "If an account exists for that email address, a reset link has been created.",
+      ...(process.env.NODE_ENV !== "production" && resetUrl ? { resetUrl } : {}),
+    });
+  } catch (error) { return next(error); }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    const { token, password } = req.body;
+    if (typeof token !== "string" || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "A valid reset token and a password of at least 8 characters are required." });
+    }
+    const passwordResetToken = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await prisma.user.findFirst({ where: { passwordResetToken, passwordResetExpiresAt: { gt: new Date() } }, select: { id: true } });
+    if (!user) return res.status(400).json({ message: "That reset link is invalid or has expired." });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await bcrypt.hash(password, 12), passwordResetToken: null, passwordResetExpiresAt: null },
+    });
+    return res.json({ message: "Password updated. You can now sign in." });
+  } catch (error) { return next(error); }
+}
+
+module.exports = { register, login, getCurrentUser, requestPasswordReset, resetPassword };

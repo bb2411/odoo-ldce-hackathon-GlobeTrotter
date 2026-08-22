@@ -10,7 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Globe } from "lucide-react";
 
 import FormInput from "../Component/auth/FormInput";
-import { loginUser } from "../services/auth";
+import { loginUser, requestPasswordReset } from "../Services/auth";
 
 const PHOTO_URL =
   "https://images.unsplash.com/photo-1515266591878-f93e32bc5937?w=1200&h=1600&fit=crop&auto=format";
@@ -72,6 +72,13 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  async function handleForgotPassword() {
+    const email = window.prompt("Enter the email address for your GlobeTrotter account.");
+    if (!email) return;
+    const result = await requestPasswordReset(email.trim());
+    setSubmitError(result.resetUrl ? `Development reset link created: ${result.resetUrl}` : (result.message || "Unable to request a password reset."));
+  }
+
   function updateField(field: keyof Fields) {
     return (e: ChangeEvent<HTMLInputElement>) => {
       setFields((prev) => ({
@@ -123,7 +130,7 @@ export default function Login() {
       });
 
       if (result.success) {
-        navigate("/");
+        navigate("/app/dashboard");
       } else {
         setSubmitError(
           result.message ?? "Login failed. Please try again."
@@ -203,12 +210,12 @@ export default function Login() {
           {/* Destination Pills */}
           <div className="flex flex-wrap gap-2">
             {[
-              "Iceland",
-              "Patagonia",
-              "Kyoto",
-              "Santorini",
-              "Amalfi Coast",
-              "Queenstown",
+              "Jaipur",
+              "Leh",
+              "Kochi",
+              "Goa",
+              "Udaipur",
+              "Rishikesh",
             ].map((dest) => (
               <span
                 key={dest}
@@ -322,9 +329,7 @@ export default function Login() {
               <button
                 type="button"
                 className="font-medium text-[#1b4f72] transition-colors hover:text-[#154060] focus-visible:underline"
-                onClick={() => {
-                  // TODO: Add forgot password functionality
-                }}
+                onClick={handleForgotPassword}
               >
                 Forgot password?
               </button>
