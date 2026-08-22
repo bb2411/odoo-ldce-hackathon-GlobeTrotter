@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TransportMode {
+  FLIGHT
+  TRAIN
+  BUS
+  CAR
+  FERRY
+  OTHER
+}
+
+enum ExpenseCategory {
+  TRANSPORT
+  ACCOMMODATION
+  FOOD
+  ACTIVITY
+  LOCAL_TRANSPORT
+  SHOPPING
+  OTHER
+}
+
+model User {
+  id           String  @id @default(uuid())
+  name         String
+  email        String  @unique
+  passwordHash String
+  profileImage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trips Trip[]
+
+  @@map("users")
+}
+
+model Trip {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+
+  startDate DateTime
+  endDate   DateTime
+
+  budget     Decimal? @db.Decimal(12, 2)
+  coverImage String?
+
+  isPublic   Boolean @default(false)
+  shareToken String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stops      TripStop[]
+  transports Transport[]
+  expenses   Expense[]
+
+  @@map("trips")
+}
+
+model City {
+  id String @id @default(uuid())
+
+  name        String
+  country     String
+  countryCode String?
+
+  latitude  Float?
+  longitude Float?
+
+  imageUrl String?
+
+  externalId String?
+  source     String?
+
+  createdAt DateTime @default(now())
+
+  tripStops  TripStop[]
+  activities Activity[]
+
+  @@unique([name, country])
+  @@map("cities")
+}
+
+model TripStop {
+  id String @id @default(uuid())
+
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id])
+
+  arrivalDate   DateTime
+  departureDate DateTime
+
+  stopOrder Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plannedActivities PlannedActivity[]
+
+  @@unique([tripId, stopOrder])
+  @@map("trip_stops")
+}
+
+model Activity {
+  id String @id @default(uuid())
+
+  cityId String
+  city   City   @relation(fields: [cityId], references: [id])
+
+  externalId String?
+  source     String?
+
+  name        String
+  description String?
+
+  category String?
+  imageUrl String?
+
+  latitude  Float?
+  longitude Float?
+
+  basePrice Decimal? @db.Decimal(12, 2)
+
+  rating          Float?
+  durationMinutes Int?
+
+  createdAt DateTime @default(now())
+
+  plannedActivities PlannedActivity[]
+
+  @@map("activities")
+}
+
+model PlannedActivity {
+  id String @id @default(uuid())
+
+  tripStopId String
+  tripStop   TripStop @relation(fields: [tripStopId], references: [id], onDelete: Cascade)
+
+  activityId String?
+  activity   Activity? @relation(fields: [activityId], references: [id])
+
+  name String
+
+  scheduledDate DateTime
+  scheduledTime DateTime?
+
+  estimatedCost Decimal? @db.Decimal(12, 2)
+
+  durationMinutes Int?
+  notes           String?
+
+  activityOrder Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("planned_activities")
+}
+
+model Transport {
+  id String @id @default(uuid())
+
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  fromCity String
+  toCity   String
+
+  mode TransportMode
+
+  departureTime DateTime?
+  arrivalTime   DateTime?
+
+  estimatedCost Decimal? @db.Decimal(12, 2)
+
+  provider String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("transports")
+}
+
+model Expense {
+  id String @id @default(uuid())
+
+  tripId String
+  trip   Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  category ExpenseCategory
+
+  title  String
+  amount Decimal @db.Decimal(12, 2)
+
+  expenseDate DateTime?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("expenses")
+}
